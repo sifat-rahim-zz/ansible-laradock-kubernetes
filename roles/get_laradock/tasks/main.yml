@@ -1,0 +1,23 @@
+---
+
+- name: Create directory for laradock
+  file: path={{ LARADOCK_LOCATION }} state=directory mode=0777 
+
+
+- name:  Download Laradock git repo
+  git: repo=https://github.com/LaraDock/laradock.git dest="{{ LARADOCK_LOCATION + '/laradock' }}"
+
+
+- name: Updating docker-compose.yml
+  template: src=docker-compose.yml.j2 dest="{{ LARADOCK_LOCATION + '/laradock/docker-compose.yml' }}"
+
+
+- name: Starting nginx, mysql using docker-compose 
+  shell: docker-compose up -d nginx mysql
+  args:
+    executable: /bin/bash
+    chdir: "{{ LARADOCK_LOCATION + '/laradock' }}"
+  become: yes
+  tags: test
+
+

@@ -1,0 +1,32 @@
+---
+language: python
+python: "2.7"
+sudo: required
+dist: trusty
+
+before_install:
+ - sudo apt-get update -qq
+ - sudo apt-get install -qq python-apt python-pycurl
+
+install:
+  - sudo pip install ansible
+  - echo -e 'localhost  ansible_connection=local' > tests/inventory
+  - echo -e '[defaults]\nroles_path = ../\nhostfile = ./tests/inventory' > ansible.cfg
+
+script:
+  - ansible-playbook --syntax-check tests/role.yml
+  - ansible-playbook -v --diff tests/role.yml
+  - >
+    ansible-playbook tests/role.yml
+    | grep -q 'changed=0.*failed=0'
+    && (echo 'Idempotence test: pass' && exit 0)
+    || (echo 'Idempotence test: fail' && exit 1)
+
+notifications:
+  email: false
+  webhooks: https://galaxy.ansible.com/api/v1/notifications/
+  irc:
+    channels:
+      - secure: "IkPCyARITsqJ84m0OZ9I3L72/JmXc+CKTdnnoJi8NIHkktIl0dk5faLKm/NyZOsaxELnfIEn1BSuZB9X/Rvtftg+Pd98WHA7eWtxCHkxEOaF5C6C5a5lGOTBSoTrAlAavz4fIDj+T06grpQqJ3mkmz/LaS1HY7eEekFe2jb/R6yuKfjB9Ix/fxU/T3oBlXbEuZBODMKc+cR/Eix1tAAFaZbjUoXj3GE7pj2VrRv+1LmG0LWYQHhSvD6V+u3I+SLUbq4w5OTD6sFsc41AP43wieukXhkOg08uRLeryLJsZSewJyUGwXBFBjGAcZjfxjURobmQZahdfL7CXGzPSQl+/Yjrx9RuW25R+BpRc8m5FgZAdLiGUrUGjt4pyt/wwLBdO9jeulfbL/4BVewallmJFTn/6jSRys5JyrcJHF8EvjTAfEwbiYt1t9brBfWkaj615feEGrsCY+YAjNliZ/rp80nb+WfzyN6vzwnBwYQaYglI5fzMwpFh/fkm0DjkTdUELtzFTIuFwC9uu2SOA24kmhDUIi5IwScoxVA+B0NG69jjOIeZ9+/LkMQQB+yQ0t6rJgYfM8y5F5DSO0iqDHFN+H7Y3I9ShlNqKWv2DnYWujGASKpYyQ6PROcvznQatmY3vARkY6QXAtP0WK6v7LU7YKrdOGGLFHwTr7/r/hhXhQk="
+    on_success: "change"
+    on_failure: "change"

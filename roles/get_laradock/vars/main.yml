@@ -1,0 +1,3 @@
+DOCKERHOST_IP: '127.0.0.1'
+LARADOCK_LOCATION: '/home/ubuntu/laradock_dev'
+LARAVEL_APP_NAME: 'myapp'

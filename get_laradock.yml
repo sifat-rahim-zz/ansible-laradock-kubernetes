@@ -1,0 +1,9 @@
+---
+
+#- hosts: tvm
+- hosts: devserver
+  roles:
+    - pre-setup
+    - docker
+    - docker-compose
+    - get_laradock

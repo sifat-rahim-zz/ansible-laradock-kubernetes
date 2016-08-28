@@ -1,0 +1,255 @@
+version: '2'
+
+services:
+
+### Workspace Utilities Container ###########################
+
+    workspace:
+        build:
+            context: ./workspace
+            args:
+                - INSTALL_XDEBUG=false
+                - INSTALL_MONGO=false
+                - INSTALL_NODE=false
+                - INSTALL_DRUSH=false
+                - COMPOSER_GLOBAL_INSTALL=false
+                - INSTALL_WORKSPACE_SSH=false
+                - PUID=1000
+                - PGID=1000
+        volumes_from:
+            - volumes_source
+        extra_hosts:
+            # IMPORTANT: Replace with your Docker Host IP (will be appended to /etc/hosts)
+            - "dockerhost:{{ DOCKERHOST_IP }}"
+        tty: true
+
+### PHP-FPM Container #######################################
+
+    php-fpm:
+        build:
+            context: ./php-fpm
+            args:
+                - INSTALL_XDEBUG=false
+                - INSTALL_MONGO=false
+                - INSTALL_ZIP_ARCHIVE=false
+                - INSTALL_MEMCACHED=false
+                - INSTALL_OPCACHE=false
+            dockerfile: Dockerfile-70
+        volumes_from:
+            - volumes_source
+        expose:
+            - "9000"
+        links:
+            - workspace
+        extra_hosts:
+            # IMPORTANT: Replace with your Docker Host IP (will be appended to /etc/hosts)
+            - "dockerhost:{{ DOCKERHOST_IP }}"
+        environment:
+            # IMPORTANT: Set the Remote Interpreter entry matching name to `laravel`
+            - PHP_IDE_CONFIG="serverName=laravel"
+
+### Nginx Server Container ##################################
+
+    nginx:
+        build:
+            context: ./nginx
+            args:
+                - PHP_UPSTREAM=php-fpm
+        volumes_from:
+            - volumes_source
+        volumes:
+            - ./logs/nginx/:/var/log/nginx
+        ports:
+            - "80:80"
+            - "443:443"
+        links:
+            - php-fpm
+
+### Apache Server Container ##################################
+
+    apache2:
+        build:
+            context: ./apache2
+            args:
+                - PHP_SOCKET="php-fpm:9000"
+        volumes_from:
+            - volumes_source
+        volumes:
+            - ./logs/apache2:/var/log/apache2
+        ports:
+            - "80:80"
+            - "443:443"
+        links:
+            - php-fpm
+
+### HHVM Container ##########################################
+
+    hhvm:
+        build: ./hhvm
+        volumes_from:
+            - volumes_source
+        expose:
+            - "9000"
+        links:
+            - workspace
+
+### MySQL Container #########################################
+
+    mysql:
+        build: ./mysql
+        volumes_from:
+            - volumes_data
+        ports:
+            - "3306:3306"
+        environment:
+            MYSQL_DATABASE: homestead
+            MYSQL_USER: homestead
+            MYSQL_PASSWORD: secret
+            MYSQL_ROOT_PASSWORD: root
+
+### PostgreSQL Container ####################################
+
+    postgres:
+        build: ./postgres
+        volumes_from:
+            - volumes_data
+        ports:
+            - "5432:5432"
+        environment:
+            POSTGRES_DB: homestead
+            POSTGRES_USER: homestead
+            POSTGRES_PASSWORD: secret
+
+### MariaDB Container #######################################
+
+    mariadb:
+        build: ./mariadb
+        volumes_from:
+            - volumes_data
+        ports:
+            - "3306:3306"
+        environment:
+            MYSQL_DATABASE: homestead
+            MYSQL_USER: homestead
+            MYSQL_PASSWORD: secret
+            MYSQL_ROOT_PASSWORD: root
+
+### Neo4j Container #########################################
+
+    neo4j:
+        build: ./neo4j
+        ports:
+            - "7474:7474"
+            - "1337:1337"
+        environment:
+            - NEO4J_AUTH=homestead:secret
+        volumes_from:
+            - volumes_data
+
+### MongoDB Container #######################################
+
+    mongo:
+        build: ./mongo
+        ports:
+            - "27017:27017"
+        volumes_from:
+            - volumes_data
+
+### Redis Container #########################################
+
+    redis:
+        build: ./redis
+        volumes_from:
+            - volumes_data
+        ports:
+            - "6379:6379"
+
+### Memcached Container #####################################
+
+    memcached:
+        build: ./memcached
+        volumes_from:
+            - volumes_data
+        ports:
+            - "11211:11211"
+        links:
+            - php-fpm
+
+### Beanstalkd Container ####################################
+
+    beanstalkd:
+        build: ./beanstalkd
+        ports:
+            - "11300:11300"
+        privileged: true
+        links:
+            - php-fpm
+
+### Beanstalkd Console Container ############################
+
+    beanstalkd-console:
+        build: ./beanstalkd-console
+        ports:
+            - "2080:2080"
+        links:
+            - beanstalkd
+
+### Caddy Server Container ##################################
+
+    caddy:
+        build: ./caddy
+        volumes_from:
+            - volumes_source
+        ports:
+            - "80:80"
+            - "443:443"
+            - "2015:2015"
+        volumes:
+            - ./caddy/Caddyfile:/etc/Caddyfile
+        links:
+            - php-fpm
+
+### phpMyAdmin Container ##################################
+
+    phpmyadmin:
+        build: ./phpmyadmin
+        environment:
+            PMA_ARBITRARY: 1
+            MYSQL_USER: homestead
+            MYSQL_PASSWORD: secret
+            MYSQL_ROOT_PASSWORD: root
+        volumes_from:
+            - volumes_data
+        ports:
+            - "8080:80"
+        links:
+            # for mysql container
+            - "mysql:db"
+            # for mariadb container
+            # - "mariadb:db"
+
+### Laravel Application Code Container ######################
+
+    volumes_source:
+        build: ./volumes/application
+        volumes:
+            - ../{{ LARAVEL_APP_NAME }}/:/var/www/laravel
+            #- ../:/var/www/laravel
+            # Demonstration of how to mount multiple sites
+            # - ../../site_a/:/var/www/site_a
+            # - ../../site_b/:/var/www/site_b
+
+### Databases Data Container ################################
+
+    volumes_data:
+        build: ./volumes/data
+        volumes:
+            - ./data/mysql:/var/lib/mysql
+            - ./data/postgres:/var/lib/postgres
+            - ./data/memcached:/var/lib/memcached
+            - ./data/redis:/data
+            - ./data/neo4j:/var/lib/neo4j/data
+            - ./data/mongo:/data/db
+            - ./data/sessions:/sessions
+
+### Add more Containers below ###############################

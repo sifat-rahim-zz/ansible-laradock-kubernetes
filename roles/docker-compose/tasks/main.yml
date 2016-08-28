@@ -1,0 +1,20 @@
+---
+
+- name: Installing packages python-setuptools
+  apt: name=python-setuptools state=latest
+  become: yes
+
+- name: Installing pip by easy_install
+  easy_install:
+    name: pip
+    state: latest	
+  become: yes
+
+- pip: name=pip state=latest
+  become: yes
+
+- name: Installing docker compose by pip
+  pip:
+    name: docker-compose
+    state: latest
+  become: yes

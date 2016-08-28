@@ -1,0 +1,4 @@
+- hosts: devserver
+  roles:
+    - pre-setup
+    - kubernetes

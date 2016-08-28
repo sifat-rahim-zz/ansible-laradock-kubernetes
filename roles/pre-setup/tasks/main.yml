@@ -1,0 +1,14 @@
+---
+
+- name: apt-get update and installing curl,htop,ssh,git,python-setuptools packages
+  apt: name=curl,htop,ssh,git,python-setuptools update_cache=yes
+  become: yes
+
+- name: Installing pip
+  easy_install:
+    name: pip
+    state: latest
+  become: yes
+
+- pip: name=pip state=latest
+  become: yes

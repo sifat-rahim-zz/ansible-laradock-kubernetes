@@ -1,0 +1,77 @@
+---
+
+- name: apt-get update and installing sshpass,bridge-utils,nmap packages
+  apt: name=sshpass,bridge-utils,nmap update_cache=yes
+  become: yes
+#  apt: name={{ item }} update_cache=yes state=installed
+#    with_items:
+#		- curl
+#		- ssh
+#		- sshpass
+#		- git
+#		- bridge-utils	
+
+- name: Installing docker (Client and server version 1.6.2)
+  apt: update_cache=yes name=docker.io state=installed
+
+# need docker-composer ?
+
+#- name: download kubernetes v1.0.1
+#  get_url: url=https://github.com/kubernetes/kubernetes/releases/download/v1.0.1/kubernetes.tar.gz dest=~/
+#  dest = /var/opt/ ?
+
+
+# we want : ssh root@127.0.0.1 ; first create id_rsa.pub , then add to /root/.ssh/authorized_keys
+- name: Create a SSH key for user 'ubuntu' in '~/.ssh/id_rsa'
+  user: name=ubuntu generate_ssh_key=yes ssh_key_type=rsa ssh_key_file=~/.ssh/id_rsa
+
+- shell: cat /home/ubuntu/.ssh/id_rsa.pub >> /root/.ssh/authorized_keys
+  become: yes
+
+
+#- shell: export CLOUD_SDK_REPO="cloud-sdk-$(lsb_release -c -s)"
+
+#ok
+- file: recurse=yes path={{ KUBE_UNARCHIVE_DEST }} state=directory mode=777
+  become: yes
+
+- name:  Download and unarchive 'kubernetes v1.0.1'
+  get_url: url=https://github.com/kubernetes/kubernetes/releases/download/v1.0.1/kubernetes.tar.gz dest={{ KUBE_UNARCHIVE_DEST }} mode=0775 owner=ubuntu
+- unarchive: copy=no src={{ KUBE_UNARCHIVE_DEST }}/kubernetes.tar.gz dest={{ KUBE_UNARCHIVE_DEST }} mode=775
+
+# ok
+- name: Running build in kubernetes/cluster/ubuntu/ 
+  shell: ./build.sh
+  args:
+    executable: /bin/bash
+    chdir: "{{ KUBE_UNARCHIVE_DEST + '/kubernetes/cluster/ubuntu/' }}"
+
+- name: Updating config-defautl.sh file
+  template: src=config-default.sh.j2 dest="{{ KUBE_UNARCHIVE_DEST + '/kubernetes/cluster/ubuntu/config-default.sh' }}"
+
+- name: kube cluster being up with kube-up.sh
+  shell: export KUBERNETES_PROVIDER=ubuntu && /bin/bash kube-up.sh ;  
+  args:
+    chdir: "{{ KUBE_UNARCHIVE_DEST + '/kubernetes/cluster/' }}"
+
+
+
+#- shell: echo "KUBE_VERSION='1.2.0'; FLANNEL_VERSION='0.5.5'; ETCD_VERSION='2.2.0' "
+##- shell: KUBE_VERSION='1.2.0'; FLANNEL_VERSION='0.5.5'; ETCD_VERSION='2.2.0';  
+
+- name: Making kubectl as a bash command for all
+  shell: cp kubectl.sh kubectl
+  args:
+    chdir: "{{ KUBE_UNARCHIVE_DEST + '/kubernetes/cluster/' }}"
+
+
+- file: path="{{ KUBE_UNARCHIVE_DEST + '/kubernetes/cluster/kubectl' }}" mode=a+x 
+
+- shell: echo export PATH=\$PATH:"{{ KUBE_UNARCHIVE_DEST + '/kubernetes/cluster/' }}" >> /home/ubuntu/.bashrc 
+
+
+# make this for all, make path permanent ?
+# export PATH=$PATH:/home/ubuntu/kubernetes/cluster/
+
+# container run example - kubectl run wordpress --image=tutum/wordpress --port=80 --hostport=81
+

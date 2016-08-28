@@ -1,0 +1,4 @@
+---
+- name: 'docker-apt-get-update'
+  apt:
+    update_cache: true
