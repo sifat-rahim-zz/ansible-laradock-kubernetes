@@ -10,25 +10,29 @@
     keyserver: 'pool.sks-keyservers.net'
     id: '58118E89F3A912897C070ADBF76221572C52609D'
   notify: 'docker-apt-get-update'
+  become: yes
 
 - name: 'Add the official docker repo'
   apt_repository:
     repo: 'deb https://apt.dockerproject.org/repo {{ansible_distribution|lower}}-{{ ansible_distribution_release }} main'
     state: 'present'
   notify: 'docker-apt-get-update'
-
+  become: yes
+  
 - meta: flush_handlers
 
 - name: 'Install docker'
   apt:
     name: 'docker-engine'
     state: 'latest'
-
+  become: yes
+  
 - name: 'Start the docker service'
   service:
     name: 'docker'
     state: 'started'
     enabled: 'yes'
+  become: yes
 
 - name: 'Ensure that the docker service is functional'
   docker_ping:
@@ -36,4 +40,4 @@
   retries: 5
   delay: 10
   until: result|success
-
+  become: yes
