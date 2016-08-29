@@ -11,8 +11,9 @@
 #		- git
 #		- bridge-utils	
 
-- name: Installing docker (Client and server version 1.6.2)
+- name: Installing docker by apt
   apt: update_cache=yes name=docker.io state=installed
+  become: yes
 
 # need docker-composer ?
 
@@ -25,29 +26,37 @@
 - name: Create a SSH key for user 'ubuntu' in '~/.ssh/id_rsa'
   user: name=ubuntu generate_ssh_key=yes ssh_key_type=rsa ssh_key_file=~/.ssh/id_rsa
 
+- file: path='/root/.ssh/' state=directory
+  become: yes
+
 - shell: cat /home/ubuntu/.ssh/id_rsa.pub >> /root/.ssh/authorized_keys
   become: yes
 
-
 #- shell: export CLOUD_SDK_REPO="cloud-sdk-$(lsb_release -c -s)"
 
-#ok
+
 - file: recurse=yes path={{ KUBE_UNARCHIVE_DEST }} state=directory mode=777
   become: yes
 
+
 - name:  Download and unarchive 'kubernetes v1.0.1'
   get_url: url=https://github.com/kubernetes/kubernetes/releases/download/v1.0.1/kubernetes.tar.gz dest={{ KUBE_UNARCHIVE_DEST }} mode=0775 owner=ubuntu
+
+
 - unarchive: copy=no src={{ KUBE_UNARCHIVE_DEST }}/kubernetes.tar.gz dest={{ KUBE_UNARCHIVE_DEST }} mode=775
 
-# ok
-- name: Running build in kubernetes/cluster/ubuntu/ 
-  shell: ./build.sh
-  args:
-    executable: /bin/bash
-    chdir: "{{ KUBE_UNARCHIVE_DEST + '/kubernetes/cluster/ubuntu/' }}"
 
-- name: Updating config-defautl.sh file
+- name: Running build in kubernetes/cluster/ubuntu/ 
+#  shell: ./build.sh
+  shell: cluster/ubuntu/build.sh
+  args:
+#    executable: /bin/bash
+#    chdir: "{{ KUBE_UNARCHIVE_DEST + '/kubernetes/cluster/ubuntu/' }}"
+    chdir: "{{ KUBE_UNARCHIVE_DEST + '/kubernetes/' }}"
+
+- name: Updating config-default.sh file
   template: src=config-default.sh.j2 dest="{{ KUBE_UNARCHIVE_DEST + '/kubernetes/cluster/ubuntu/config-default.sh' }}"
+
 
 - name: kube cluster being up with kube-up.sh
   shell: export KUBERNETES_PROVIDER=ubuntu && /bin/bash kube-up.sh ;  
@@ -74,4 +83,3 @@
 # export PATH=$PATH:/home/ubuntu/kubernetes/cluster/
 
 # container run example - kubectl run wordpress --image=tutum/wordpress --port=80 --hostport=81
-
