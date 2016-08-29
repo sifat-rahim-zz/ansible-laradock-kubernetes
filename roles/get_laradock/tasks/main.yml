@@ -1,7 +1,7 @@
 ---
 
 - name: Create directory for laradock
-  file: path={{ LARADOCK_LOCATION }} state=directory mode=0777 
+  file: path={{ LARADOCK_LOCATION }} state=directory mode=a+rwx 
 
 
 - name:  Download Laradock git repo
