@@ -47,14 +47,15 @@
 
 
 - name: Running build in kubernetes/cluster/ubuntu/ 
-#  shell: ./build.sh
-  shell: cluster/ubuntu/build.sh
+  shell: ./build.sh
+#  shell: cluster/ubuntu/build.sh
   args:
 #    executable: /bin/bash
-#    chdir: "{{ KUBE_UNARCHIVE_DEST + '/kubernetes/cluster/ubuntu/' }}"
-    chdir: "{{ KUBE_UNARCHIVE_DEST + '/kubernetes/' }}"
+    chdir: "{{ KUBE_UNARCHIVE_DEST + '/kubernetes/cluster/ubuntu/' }}"
+#    chdir: "{{ KUBE_UNARCHIVE_DEST + '/kubernetes/' }}"
 
-- name: Updating config-default.sh file
+
+- name: Updating config-defautl.sh file
   template: src=config-default.sh.j2 dest="{{ KUBE_UNARCHIVE_DEST + '/kubernetes/cluster/ubuntu/config-default.sh' }}"
 
 
@@ -62,7 +63,6 @@
   shell: export KUBERNETES_PROVIDER=ubuntu && /bin/bash kube-up.sh ;  
   args:
     chdir: "{{ KUBE_UNARCHIVE_DEST + '/kubernetes/cluster/' }}"
-
 
 
 #- shell: echo "KUBE_VERSION='1.2.0'; FLANNEL_VERSION='0.5.5'; ETCD_VERSION='2.2.0' "
@@ -76,10 +76,5 @@
 
 - file: path="{{ KUBE_UNARCHIVE_DEST + '/kubernetes/cluster/kubectl' }}" mode=a+x 
 
+
 - shell: echo export PATH=\$PATH:"{{ KUBE_UNARCHIVE_DEST + '/kubernetes/cluster/' }}" >> /home/ubuntu/.bashrc 
-
-
-# make this for all, make path permanent ?
-# export PATH=$PATH:/home/ubuntu/kubernetes/cluster/
-
-# container run example - kubectl run wordpress --image=tutum/wordpress --port=80 --hostport=81
